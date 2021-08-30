@@ -4,3 +4,6 @@ author: "Cam Rondeau"
 date: "8/30/2021"
 output: html_document
 ---
+## Student Profile
+
+Alvin Chen
