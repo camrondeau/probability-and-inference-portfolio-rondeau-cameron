@@ -7,3 +7,5 @@ output: html_document
 ## Student Profile
 
 Alvin Chen
+
+Alvin went to Boston University for undergrad.
