@@ -1,9 +1,7 @@
-writeup
+The Martingale Strategy in Roulette
 ================
 Cam Rondeau
 9/1/2021
-
-## The Martingale Strategy in Roulette
 
 ### Overview
 

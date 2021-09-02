@@ -1,11 +1,9 @@
 ---
-title: "writeup"
+title: "The Martingale Strategy in Roulette"
 author: "Cam Rondeau"
 date: "9/1/2021"
 output: html_document
 ---
-
-## The Martingale Strategy in Roulette
 
 ### Overview
 The Martingale strategy is a common strategy used in betting to try and guarantee a profit. In this strategy, the bettor simply doubles their bet after every loss, which theoretically will always result in the bettor eventually recouping their losses and netting a small profit. In the game of roulette, the Martingale strategy can be demonstrated by a bettor putting $1 on red. If the bet loses, the player wagers twice the amount they lost on red again. If the bet wins, the player keeps their $1 and places another $1 bet on red and repeats. This can be seen in the graphic below:
