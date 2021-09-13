@@ -1,0 +1,138 @@
+---
+title: "test_code"
+author: "Cam Rondeau"
+date: "9/8/2021"
+output: html_document
+---
+
+```{r}
+?rbinom
+rbinom(1,1,0.5)
+rbinom(10,1,0.5)
+rbinom(1,10,0.5)
+rbinom(7,10,0.5)
+```
+
+Hints/Tips - don't get overwhelmed by the plot. Just think about a single combination of sample size and a single target probability. Pick one point on the plot and write the code to get that one individual calculation. Then you can take the code and put it in a for loop to generate all other data points. sample size = 4, target probability is 0.01: rbinom(1,4,0.01)
+
+double for loop
+
+plot 1 x2 - plot original abs/rel error on log 2 scale
+plot 2 x2 - change y scale to log 10
+plot(x=log2(n), y=df[5,],xaxt="n")
+axis(1, at=log2(n), labels=n)
+
+plot(x=log2(n), y= abs.err[5,], xaxt='n', type="b", col="orange", pch = 16,
+     ylab="Absolute Error", xlab = parse(text = "N~(log[2]~scale)"),
+     ylim = c(0,0.2))
+axis(1, at= log2(n),labels=n, cex.axis = 0.7)
+
+lines(x=log2(n), y= abs.err[4,], col="purple",type="b", pch = 16)
+
+abs.err = matric(NA,nrow=5,ncol=length(n))
+for(i in 1:14); length(n)
+  for(j in 1:5); length(p)
+    phat = rbinom(10000, n[i], p[j])
+    abs.err[j,i]=abs.err
+    rel.err[j,i]=rel.err
+    
+length(n) = 14
+
+do blocks of code and describe - not everything at once.
+Intro (few sentences)
+
+
+```{r}
+library(dplyr) 
+library(ggplot2)
+
+output <- expand.grid(
+  N = 2^c(2:15),
+  P = c(0.01, 0.05, 0.1, 0.25, 0.5),
+  abs_error = NA,
+  rel_error = NA,
+  KEEP.OUT.ATTRS = FALSE
+)
+
+
+r <- 10000
+for(i in 1:nrow(output)){
+  p <- output$P[i]
+  n <- output$N[i]
+  phat <- rbinom(r,n,p)/n
+  output[i,j] <- mean(abs(phat-p))
+  output[i, "rel_error"] <- mean(abs(phat-p)/p)
+}
+
+
+
+
+
+
+output2 <- expand.grid(
+  N = 2^c(2:15),
+  P = c(0.01, 0.05, 0.1, 0.25, 0.5),
+  abs_error = NA,
+  rel_error = NA,
+  KEEP.OUT.ATTRS = FALSE
+)
+
+
+n <- 2^c(2:15)
+p <- c(0.01, 0.05, 0.1, 0.25, 0.5)
+abs_error = matrix(NA,nrow=5,ncol=length(n))
+rel_error = matrix(NA,nrow=5,ncol=length(n))
+
+for(i in 1:length(n)){
+  for(j in 1:length(p)){
+  phat <- rbinom(10000,n[i],p[j])/n[i]
+  abs_error[j,i] <- mean(abs(phat-p[i]))
+  rel_error[j,i] <- mean(abs(phat-p[i])/p[i])
+}
+}
+
+
+
+
+```
+```{r}
+
+n <- 2^c(2:15)
+p <- c(0.01, 0.05, 0.1, 0.25, 0.5)
+abs_error = matrix(NA,nrow=5,ncol=length(n))
+rel_error = matrix(NA,nrow=5,ncol=length(n))
+
+for(i in 1:length(n)){
+  for(j in 1:length(p)){
+  phat <- rbinom(10000,n[i],p[j])/n[i]
+  abs_error[j,i] <- mean(abs(phat-p[j]))
+  rel_error[j,i] <- mean(abs(phat-p[j])/p[j])
+}
+}
+
+
+plot(x=log2(n), y=abs_error[1,], xaxt='n', type="b", col="orange", pch = 16,
+     ylab="Absolute Error", xlab = parse(text = "N~(log[2]~scale)"),
+     ylim = c(0,0.2))
+axis(1, at= log2(n),labels=n, cex.axis = 0.7)
+lines(x=log2(n), y= abs_error[2,], col="purple",type="b", pch = 16)
+lines(x=log2(n), y= abs_error[3,], col="red",type="b", pch = 16)
+lines(x=log2(n), y= abs_error[4,], col="blue",type="b", pch = 16)
+lines(x=log2(n), y= abs_error[5,], col="green",type="b", pch = 16)
+legend(x = "topright", legend = c("p = 0.01","p = 0.05","p = 0.10","p = 0.25","p = 0.50"), col=c("orange", "purple", "red", "blue", "green"), lwd=3)
+
+
+
+
+
+plot(x=log2(n), y=rel_error[1,], xaxt='n', type="b", col="orange", pch = 16,
+     ylab="Relative Error", xlab = parse(text = "N~(log[2]~scale)"),
+     ylim = c(0,2))
+axis(1, at= log2(n),labels=n, cex.axis = 0.7)
+lines(x=log2(n), y= rel_error[2,], col="purple",type="b", pch = 16)
+lines(x=log2(n), y= rel_error[3,], col="red",type="b", pch = 16)
+lines(x=log2(n), y= rel_error[4,], col="blue",type="b", pch = 16)
+lines(x=log2(n), y= rel_error[5,], col="green",type="b", pch = 16)
+legend(x = "topright", legend = c("p = 0.01","p = 0.05","p = 0.10","p = 0.25","p = 0.50"), col=c("orange", "purple", "red", "blue", "green"), lwd=3)
+```
+
