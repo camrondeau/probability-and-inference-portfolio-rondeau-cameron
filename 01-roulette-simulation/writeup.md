@@ -3,7 +3,7 @@ The Martingale Strategy in Roulette
 Cam Rondeau
 9/1/2021
 
-### Overview
+# Overview
 
 The Martingale strategy is a common strategy used in betting to try and
 guarantee a profit. In this strategy, the bettor simply doubles their
@@ -17,7 +17,7 @@ graphic below:
 
 ![](./martingale-strategy.svg)
 
-### Operating Characteristics
+# Operating Characteristics
 
 There are several operating characteristics that contribute to the
 possible outcomes of the Martingale strategy in roulette. The main
@@ -45,20 +45,138 @@ For the purposes of this blog, the following parameters have been set:
 |   **L**   | Time threshold for stopping     |               1000 plays               |
 |   **M**   | Casino’s maximum wager          |                  $100                  |
 
-### Testing the Martingale Strategy
+# Testing the Martingale Strategy
 
 Using computer simulation, we can calculate the average earnings of a
 better that uses this strategy. To do so, we first need to create code
 that simulates one single walk through of the Martingale strategy. This
-code will take the parameters listed above and will simulate roulette
-spins until either the player is bankrupt, the player reaches their
-winning threshold, or the player hits their time threshold for stopping.
-Once one of these events is reached, the code returns the history of the
-player’s budget, which is a list that contains the player’s budget after
-each roulette spin until stopping. Assuming the parameters above, the
-final budget will either be $0 (the player is bankrupt), $300 (the
-player reached their winning threshold), or the budget amount after 1000
-plays.
+code (shown below) will take the parameters listed above and will
+simulate roulette spins until either the player is bankrupt, the player
+reaches their winning threshold, or the player hits their time threshold
+for stopping. Once one of these events is reached, the code returns the
+history of the player’s budget, which is a list that contains the
+player’s budget after each roulette spin until stopping. Assuming the
+parameters above, the final budget will either be $0 (the player is
+bankrupt), $300 (the player reached their winning threshold), or the
+budget amount after 1000 plays.
+
+``` r
+library(dplyr)
+```
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
+
+``` r
+#' A single play of the Martingale strategy
+#'
+#' Takes a state list, spins the roulette wheel, returns the state list with updated values (for example, budget, plays, etc)
+#' @param state A list with the following entries: 
+#'   B              number, the budget
+#'   W              number, the budget threshold for successfully stoping
+#'   L              number, the maximum number of plays 
+#'   M              number, the casino wager limit
+#'   plays          integer, the number of plays executed
+#'   previous_wager number, the wager in the previous play (0 at first play)
+#'   previous_win   TRUE/FALSE, indicator if the previous play was a win (TRUE at first play)
+#' @return The updated state list
+
+
+
+one_play <- function(state){
+  
+    # Wager
+    proposed_wager <- ifelse(state$previous_win, 1, 2*state$previous_wager)
+    wager <- min(proposed_wager, state$M, state$B)
+    
+    # Spin of the wheel
+    red <- rbinom(1,1,18/38)
+    
+    # Update state
+    state$plays <- state$plays + 1
+    state$previous_wager <- wager
+    if(red){
+      # WIN
+      state$B <- state$B + wager
+      state$previous_win <- TRUE
+    }else{
+      # LOSE
+      state$B <- state$B - wager
+      state$previous_win <- FALSE
+    }
+  state
+}
+
+
+#' Stopping rule
+#'
+#' Takes the state list and determines if the gambler has to stop
+#' @param state A list.  See one_play
+#' @return TRUE/FALSE
+stop_play <- function(state){
+  if(state$B <= 0) return(TRUE)
+  if(state$plays >= state$L) return(TRUE)
+  if(state$B >= state$W) return(TRUE)
+  FALSE
+}
+
+
+#' Play roulette to either bankruptcy, success, or play limits
+#'
+#' @param B number, the starting budget
+#' @param W number, the budget threshold for successfully stoping
+#' @param L number, the maximum number of plays 
+#' @param M number, the casino wager limit
+#' @return A vector of budget values calculated after each play.
+one_series <- function(
+    B = 200
+  , W = 300
+  , L = 1000
+  , M = 100
+){
+
+  # initial state
+  state <- list(
+    B = B
+  , W = W
+  , L = L
+  , M = M
+  , plays = 0
+  , previous_wager = 0
+  , previous_win = TRUE
+  )
+  
+  # vector to store budget over series of plays
+  budget <- rep(NA, L)
+  
+  # For loop of plays
+  for(i in 1:L){
+    new_state <- state %>% one_play
+    budget[i] <- new_state$B
+    if(new_state %>% stop_play){
+      return(budget[1:i])
+    }
+    state <- new_state
+  }
+  budget    
+}
+ #test output
+one_series(B = 200, W = 300, L = 1000, M = 100)
+```
+
+    ##  [1] 199 201 202 203 204 203 205 206 205 207 206 208 207 209 208 210 209 211 210
+    ## [20] 208 212 213 212 210 206 214 215 214 216 217 218 217 219 218 216 212 220 221
+    ## [39] 220 218 222 223 222 220 216 208 192 224 223 225 226 225 227 226 224 228 227
+    ## [58] 229 230 229 231 230 232 233 232 234 235 236 237 238 239 240 239 237 233 225
+    ## [77] 209 177 113  13   0
 
 The graphs below show a two separate examples of the earning amounts
 across single attempts at the Martingale Strategy. The first plot shows
@@ -66,11 +184,29 @@ the earnings of a scenario in which the better reaches their winning
 threshold of $300. The second plot shows the earnings in the scenario in
 which the bettor goes bankrupt.
 
-![](./winner.svg)
+``` r
+library(ggplot2)
 
-![](./loser.svg)
+#Plot a winning scenario of the Martingale Strategy
+set.seed(1)
+win_ledger <- one_series(B = 200, W = 300, L = 1000, M = 100)
+win_graph <- data.frame(play_number=seq(1,length(win_ledger)), amount=win_ledger)
+ggplot(win_graph, aes(x=play_number, y=amount)) + geom_line() + labs(x="Game Index", y="Budget", title="Winning Scenario") + theme_classic()
+```
 
-### Simulating Average Outcomes
+![](writeup_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+``` r
+#Plot a winning scenario of the Martingale Strategy
+set.seed(2)
+lose_ledger <- one_series(B = 200, W = 300, L = 1000, M = 100)
+lose_graph <- data.frame(play_number=seq(1,length(lose_ledger)), amount=lose_ledger)
+ggplot(lose_graph, aes(x=play_number, y=amount)) + geom_line() + labs(x="Game Index", y="Budget", title="Losing Scenario") + theme_classic()
+```
+
+![](writeup_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
+
+## Simulating Average Outcomes
 
 Running the code outlined above will create a single scenario of what
 may happen when using the Martingale Strategy. However, to determine the
@@ -80,16 +216,42 @@ our results. For this example, we repeat the code of a single Martingale
 Strategy scenario 10,000 times, and end up with a list of the final
 budget of each individual scenario. From here, we can calculate the
 distribution of final budgets, as well as the average final budget that
-a player will have when using this strategy. When looking at 10,000
-events using the parameters listed above, the probability of walking out
-with extra cash is around 0.511. However, the average earning is around
--$46.79. The reason for this is because with the set parameters, when
-the player reaches their winning threshold, they only win $100 on net.
-When the player goes bankrupt, they lose $200 on net. So while the
-player is slightly more likely to succeed when using the Martingale
-strategy, the expected earnings is negative with the set parameters.
+a player will have when using this strategy. This code is shown below.
 
-### Changing the Winning Threshold
+``` r
+# helper function
+get_last <- function(x) x[length(x)] 
+
+
+# Simulation
+walk_out_money <- rep(NA, 10000)
+for(j in seq_along(walk_out_money)){
+  walk_out_money[j] <- one_series(B = 200, W = 300, L = 1000, M = 100) %>% get_last
+}
+
+# Estimated probability of walking out with extra cash
+mean(walk_out_money > 200)
+```
+
+    ## [1] 0.5183
+
+``` r
+# Estimated earnings
+mean(walk_out_money - 200)
+```
+
+    ## [1] -44.5466
+
+When looking at 10,000 events using the parameters listed above, the
+probability of walking out with extra cash is around 0.511. However, the
+average earning is around -$46.79. The reason for this is because with
+the set parameters, when the player reaches their winning threshold,
+they only win $100 on net. When the player goes bankrupt, they lose $200
+on net. So while the player is slightly more likely to succeed when
+using the Martingale strategy, the expected earnings is negative with
+the set parameters.
+
+## Changing the Winning Threshold
 
 To further test the Martingale strategy, we can change the player’s
 winning threshold and simulate what the average earning is when the
@@ -108,6 +270,43 @@ around $-24.65, which is \~$22 more than when the winning threshold was
 $300. The probability of having positive earnings is 0.701, which is
 \~0.19 more than the original example.
 
+The code for both increasing and decreasing the winning threshold can be
+seen below.
+
+``` r
+#Simulation for increasing the winning threshold to $350, along with the probability of walking out with extra cash, and the estimated earnings.
+walk_out_money_350 <- rep(NA, 10000)
+for(j in seq_along(walk_out_money_350)){
+  walk_out_money_350[j] <- one_series(B = 200, W = 350, L = 1000, M = 100) %>% get_last
+}
+mean(walk_out_money_350 > 200)
+```
+
+    ## [1] 0.3923
+
+``` r
+mean(walk_out_money_350 - 200)
+```
+
+    ## [1] -62.887
+
+``` r
+#Simulation for decreasing the winning threshold to $250, along with the probability of walking out with extra cash, and the estimated earnings.
+walk_out_money_250 <- rep(NA, 10000)
+for(j in seq_along(walk_out_money_250)){
+  walk_out_money_250[j] <- one_series(B = 200, W = 250, L = 1000, M = 100) %>% get_last
+}
+mean(walk_out_money_250 > 200)
+```
+
+    ## [1] 0.6958
+
+``` r
+mean(walk_out_money_250 - 200)
+```
+
+    ## [1] -26.05
+
 As you can see, when the winning threshold is increased, both the
 expected earnings and the probability of making money decreases. When
 the winning threshold is decreased, the expected earnings and
@@ -125,13 +324,25 @@ increases, the number of times the player walks away with $0 increases
 and the number of times the player walks away with their winning
 threshold decreases.
 
-![](./250-winning-threshold.JPG)
+``` r
+hist(walk_out_money_250, breaks = 100)
+```
 
-![](./300-winning-threshold.JPG)
+![](writeup_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-![](./350-winning-threshold.JPG)
+``` r
+hist(walk_out_money, breaks = 100)
+```
 
-### Average Number of Plays Before Stopping
+![](writeup_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
+
+``` r
+hist(walk_out_money_350, breaks = 100)
+```
+
+![](writeup_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->
+
+## Average Number of Plays Before Stopping
 
 We can also use computer simulation to determine how many games on
 average a player will play before stopping. Recalling the stopping rule
@@ -147,12 +358,67 @@ average play number. Using the original parameters above ($200 starting
 budget, $300 winning threshold, 1000 play limit, and $100 casino limit),
 the simulation found that it took an average of 201 games before
 eventually hitting one of the three stopping points. The histogram below
-shows the distribution of the number of plays before stopping over
+also shows the distribution of the number of plays before stopping over
 10,000 events.
 
-![](./stopping-point.JPG)
+``` r
+one_series <- function(
+    B = 200
+  , W = 300
+  , L = 1000
+  , M = 100
+){
 
-### Limitations of the Simulation
+  # initial state
+  state <- list(
+    B = B
+  , W = W
+  , L = L
+  , M = M
+  , plays = 0
+  , previous_wager = 0
+  , previous_win = TRUE
+  )
+  
+  # vector to store number of plays
+  play_number <- rep(NA, L)
+  
+  # For loop of plays
+  for(i in 1:L){
+    new_state <- state %>% one_play
+    play_number[i] <- new_state$plays
+    if(new_state %>% stop_play){
+      return(play_number[1:i])
+    }
+    state <- new_state
+  }
+  play_number    
+}
+
+# helper function
+get_last <- function(x) x[length(x)] 
+
+
+# Simulation
+walk_out_play <- rep(NA, 10000)
+for(j in seq_along(walk_out_play)){
+  walk_out_play[j] <- one_series(B = 200, W = 300, L = 1000, M = 100) %>% get_last
+}
+
+# Average number of plays
+mean(walk_out_play)
+```
+
+    ## [1] 202.12
+
+``` r
+# Number of plays distribution
+hist(walk_out_play, breaks = 100)
+```
+
+![](writeup_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+# Limitations of the Simulation
 
 Although we can use computer simulation to come up with average earnings
 and number of plays when using the Martingale strategy, there are still
@@ -170,7 +436,7 @@ Martingale strategy, but if a human were to lose many bets in a row,
 there’s a high chance they won’t be willing to keep doubling down and
 instead will back out or start from the beginning.
 
-### Conclusion
+# Conclusion
 
 The Martingale strategy is a very popular betting system because it
 seems to guarantee a small profit eventually. However, it’s not as
