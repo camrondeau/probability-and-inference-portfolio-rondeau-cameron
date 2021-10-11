@@ -1,0 +1,141 @@
+---
+title: "Log Transformation"
+author: "Cam Rondeau"
+date: "10/10/2021"
+output:
+  html_document:
+    code_folding: hide
+    toc: yes
+    number_sections: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+
+# Introduction
+
+When analyzing biological data, it is common to log transform data that represents concentrations or dose response. In this blog, I will answer a series of questions related to the transformation of data, using both analytical methods and simulation. To answer these questions, I will investigate three separate transformations: gamma, log normal, and uniform. I will create a PDF and CDF for each distribution, a PDF and CDF for the log of each distribution, and then simulate the geometric and arithmetic mean of each.
+
+# Distribution 1
+
+*X* ∼ GAMMA(shape = 3, scale = 1)
+
+## Question 1
+
+```{r}
+library(ggplot2)
+
+sample <- seq(0,10,.1)
+
+#Create PDF
+gamma_pdf <- dgamma(sample, shape=3)
+gamma_pdf_df <- data.frame(sample, gamma_pdf)
+ggplot(gamma_pdf_df, aes(x=sample, y=gamma_pdf)) + 
+  geom_line(size=1) +
+  labs(title="Probability Density Function for Gamma",
+       subtitle="Shape = 3, Scale = 1",
+       x="",
+       y="",
+       col="") +
+  theme_bw() +
+  geom_vline(aes(xintercept = 3*1,col="red")) +
+  geom_vline(aes(xintercept = qgamma(0.5,3,1), col="blue")) +
+  scale_colour_manual(values=c("blue", "red"), labels=c(paste0("Median = ", round(qgamma(0.5,3,1),2)), paste0("Mean = ", 3)))
+
+
+#Create CDF
+gamma_cdf <- pgamma(sample, shape=3)
+gamma_cdf_df <- data.frame(sample, gamma_cdf)
+ggplot(gamma_cdf_df, aes(x=sample, y=gamma_cdf)) + 
+  geom_line(size=1) +
+  labs(title="Cumulative Density Function for Gamma",
+       subtitle="Shape = 3, Scale = 1",
+       x="",
+       y="",
+       colour="") +
+  theme_bw() +
+  geom_vline(aes(xintercept = 3*1,col="red")) +
+  geom_vline(aes(xintercept = qgamma(0.5,3,1), col="blue")) +
+  scale_colour_manual(values=c("blue", "red"), labels=c(paste0("Median = ", round(qgamma(0.5,3,1),2)), paste0("Mean = ", 3)))
+
+  
+```
+
+## Question 2
+
+```{r}
+sample <- seq(0,10,.1)
+
+#Create PDF
+gamma_pdf <- log(dgamma(sample, shape=3))
+gamma_pdf_df <- data.frame(sample, gamma_pdf)
+ggplot(gamma_pdf_df, aes(x=sample, y=gamma_pdf)) + 
+  geom_line(size=1) +
+  labs(title="Log Transformation Gamma PDF",
+       subtitle="Shape = 3, Scale = 1",
+       x="",
+       y="",
+       col="") +
+  theme_bw() +
+  geom_vline(aes(xintercept = 3*1,col="red")) +
+  geom_vline(aes(xintercept = qgamma(0.5,3,1), col="blue")) +
+  scale_colour_manual(values=c("blue", "red"), labels=c(paste0("Median = ", round(qgamma(0.5,3,1),2)), paste0("Mean = ", 3)))
+
+
+#Create CDF
+gamma_cdf <- log(pgamma(sample, shape=3))
+gamma_cdf_df <- data.frame(sample, gamma_cdf)
+ggplot(gamma_cdf_df, aes(x=sample, y=gamma_cdf)) + 
+  geom_line(size=1) +
+  labs(title="Log Transformation Gamma CDF",
+       subtitle="Shape = 3, Scale = 1",
+       x="",
+       y="",
+       colour="") +
+  theme_bw() +
+  geom_vline(aes(xintercept = 3*1,col="red")) +
+  geom_vline(aes(xintercept = qgamma(0.5,3,1), col="blue")) +
+  scale_colour_manual(values=c("blue", "red"), labels=c(paste0("Median = ", round(qgamma(0.5,3,1),2)), paste0("Mean = ", 3)))
+```
+
+## Question 3
+
+```{r}
+arithmetic <- rep(NA, 1000)
+geometric <- rep(NA, 1000)
+
+for(i in 1:1000){
+  arithmetic[i] = mean(rgamma(100,3,1))
+  geometric[i] = exp(mean(log(rgamma(100,3,1))))
+  }
+
+plot_mean <- data.frame(arithmetic, geometric)
+
+ggplot(plot_mean, aes(arithmetic, geometric)) + geom_point() +
+  labs(title="Arithmetic vs. Geometric Mean",
+       x="Arithmetic",
+       y="Geometric") +
+  theme_bw()
+```
+
+## Question 4
+
+```{r}
+mean_diff = rep(NA, 1000)
+
+for(i in 1:1000){
+  mean_diff[i] = arithmetic[i] - geometric[i]
+}
+
+df_mean_diff <- data.frame(mean_diff)
+
+ggplot(df_mean_diff, aes(mean_diff)) + geom_histogram(binwidth=0.1, fill="lightgrey", col="black") +
+  labs(title="Distribution of arithmetic and geometric mean difference",
+       x="Difference in Mean",
+       y="Count") +
+  theme_bw()
+```
+
