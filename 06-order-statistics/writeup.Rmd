@@ -1,0 +1,249 @@
+---
+title: "Which quantiles of a continuous distribution can one estimate with more precision?"
+author: "Cam Rondeau"
+date: "10/24/2021"
+output:
+  html_document:
+    code_folding: hide
+    toc: yes
+    number_sections: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+
+# Introduction
+
+In this blog post, I will answer a series of questions related to the variation 
+of the median, along with a range of other quantities. I will use analytical 
+methods to answer these questions.
+
+# Questions
+
+## Question 1
+Begin with the median from a sample of *N* = 200 from the
+standard normal distribution. Write an R function that is the density
+function for the median in this sample. Note that the 100th order
+statistic is approximately the median, and use the order statistic
+formula discussed in class. Generate a plot of the function.
+
+Answer: The density function for $X_{(k)}$ is as follows: $f_{(k)}(x) = k\, {n \choose k}[F(x)]^{k-1}[1-F(x)]^{n-k}f(x)$. 
+Using this, we can plug in *n* = 200 and *k* = 100 to get the density function for the median.
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+dorder <- function(x){
+  100*
+  choose(200,100)*
+  (pnorm(x))^(100-1)*
+  (1-pnorm(x))^(100)*
+  dnorm(x)
+}
+
+curve(dorder(x),-0.6,0.6, 
+      xlab="Median", 
+      ylab="Density", 
+      main="Distribution of Median with sample size 200")
+```
+
+## Question 2
+Write an R function that is the probability function for the median in this sample. Use the order statistic formula discussed in class. Generate a plot of the function.
+
+Answer: The probability function for $X_{(k)}$ is as follows: $F_{(k)}(x) = \sum_{j = k}^N {n \choose j}[F(x)]^{j}[1-F(x)]^{n-j}$. 
+Using this, we can plug in *n* = 200 and *k* = 100 to get the density function for the median.
+
+```{r}
+porder <- function(x){
+  pbinom(100-1, 200, pnorm(x), lower.tail = FALSE)
+}
+
+curve(porder(x), -0.3, 0.3,
+      xlab="Median", 
+      ylab="Probability", 
+      main="CDF of Median with sample size 200")
+```
+
+## Question 3
+Write an R function that is the quantile function for the median in this sample. (You have several options for how to write this function.) Generate a plot of the function.
+
+Answer: 
+
+```{r}
+qorder <- function(p){
+  out <- p*0
+  temp <- function(x,p){porder(x)-p}
+  for(i in seq_along(p)){
+    out[i] <- uniroot(temp,c(-5,5),p=p[i])$root
+  }
+  out
+}
+
+curve(qorder(x), 0,1, ylim=c(-0.2,0.2),
+      xlab="Cumulative Probability", 
+      ylab="Median", 
+      main="Quantile Function of Median with sample size 200")
+```
+
+## Question 4
+Simulate the sampling distribution for the median. Create a plot
+of the empirical CDF (ECDF). Overlay the plot of the ECDF with a plot of
+the CDF.
+
+Answer:
+```{r}
+medians <- replicate(
+  1000
+  , rnorm(200) %>% sort %>% `[` (100)
+)
+
+medians_ecdf <- ecdf(medians)
+
+plot(medians_ecdf, col = "blue", xlim=c(-0.3, 0.3), lw=2)
+curve(porder(x), add=TRUE, col = "red", lw=2)
+legend(0.15,0.25,legend=c("Analytical", "Simulation"),
+       col=c("red", "blue"), lty=1:1)
+```
+
+## Question 5
+Using the simulated sampling distribution from the previous question, create a histogram (on the density scale). Overlay the histogram with a plot of the density function.
+
+Answer:
+```{r}
+medians <- replicate(
+  1000
+  , rnorm(200) %>% sort %>% `[` (100)
+)
+
+hist(medians, freq=FALSE)
+lines(density(medians), col="red", lw=2)
+```
+
+## Question 6
+
+One very common way to compare a random sample to a theoretical candidate distribution is the QQ plot. It is created by ploting quantiles of the theoretical distribution on the x-axis and empirical quantiles from the sample on the y-axis.
+
+Generate a QQ plot for the simulated data of the median relative to the known sampling distribution of the median.
+
+```{r}
+medians <- replicate(
+  1000
+  , rnorm(200) %>% sort %>% `[` (100)
+)
+
+q_candidate <- qnorm
+
+x <- qorder((1:199)/200)
+y <- quantile(medians, probs = (1:199)/200)
+
+plot(x,y, asp = 1, xlab = "Theoretical quantile", ylab = "Sample quantile")
+abline(0,1)
+
+```
+As we can see from the graph, the plotted points all fall very close to the line *y* = *x*. This means that simulated data very much agrees with the theoretical sampling distribution.
+
+## Question 7
+Modify the dorder, porder, and qorder functions so that the functions take a new parameter k (for the kt**h order statistic) so that the functions will work for any order statistic and not just the median.
+
+Answer:
+```{r}
+dorder <- function(x, k){
+  k*
+  choose(200,k)*
+  (pnorm(x))^(k-1)*
+  (1-pnorm(x))^(200-k)*
+  dnorm(x)
+}
+
+porder <- function(x, k){
+  pbinom(k-1, 200, pnorm(x), lower.tail = FALSE)
+}
+
+qorder <- function(p,k){
+  out <- p*0
+  temp <- function(x,p){porder(x,k)-p}
+  for(i in seq_along(p)){
+    out[i] <- uniroot(temp,c(-5,5),p=p[i])$root
+  }
+  out
+}
+```
+
+
+## Question 8
+Generate the QQ plot for simulated data from the sampling
+distribution of the sample max and the theoretical largest order
+statistic distribution.
+
+Answer:
+```{r}
+max <- replicate(
+  1000
+  , max(rnorm(200))
+)
+max1 <- rnorm(200)
+q_candidate <- qnorm
+
+x <- qorder((1:199)/200,200) #p=1 creates outlier equal to 100
+y <- quantile(max, probs = (1:199)/200)
+
+plot(x,y, asp = 1, xlab = "Theoretical quantile", ylab = "Sample quantile")
+abline(0,1)
+```
+As we can see from the graph, the plotted points all fall very close to the line *y* = *x*. This means that simulated data for the sampling distribution of the max very much agrees with the theoretical sampling distribution.
+
+## Question 9
+Modify the `dorder`, `porder`, and `qorder` functions so that the
+functions take new parameters `dist` and `...` so that the functions
+will work for any continuous distribution that has `d` and `p` functions
+defined in R.
+
+Answer:
+```{r}
+dorder <- function(x, k, dist, ...){
+  p <- eval(parse(text=paste0("p", dist)))
+  d <- eval(parse(text=paste0("d", dist)))
+  k*
+  choose(200,k)*
+  (p(x))^(k-1)*
+  (1-p(x))^(200-k)*
+  d(x)
+}
+
+porder <- function(x, k, dist, ...){
+  p <- eval(parse(text=paste0("p", dist)))
+  pbinom(k-1, 200, p(x), lower.tail = FALSE)
+}
+
+qorder <- function(p, k, dist, ...){
+  out <- p*0
+  temp <- function(x,p){porder(x, k, "norm")-p}
+  for(i in seq_along(p)){
+    out[i] <- uniroot(temp,c(-5,5),p=p[i])$root
+  }
+  out
+}
+```
+
+
+## Question 10
+Use the newly modified functions to plot the probability and density functions for the sample min (N = 200).
+
+Answer:
+```{r}
+curve(dorder(x,1,"norm"),-5,0, 
+      xlab="Median", 
+      ylab="Density", 
+      main="PDF of Minimum with sample size 200")
+
+curve(porder(x,1,"norm"), -5,0,
+      xlab="Median", 
+      ylab="Probability", 
+      main="CDF of Minimum with sample size 200")
+```
+
