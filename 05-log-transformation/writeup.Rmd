@@ -106,8 +106,9 @@ arithmetic <- rep(NA, 1000)
 geometric <- rep(NA, 1000)
 
 for(i in 1:1000){
-  arithmetic[i] = mean(rgamma(100,3,1))
-  geometric[i] = exp(mean(log(rgamma(100,3,1))))
+  sample <- rgamma(100,3,1)
+  arithmetic[i] = mean(sample)
+  geometric[i] = exp(mean(log(sample)))
   }
 
 plot_mean <- data.frame(arithmetic, geometric)
@@ -233,8 +234,9 @@ arithmetic_ln <- rep(NA, 1000)
 geometric_ln <- rep(NA, 1000)
 
 for(i in 1:1000){
-  arithmetic_ln[i] = mean(rlnorm(100,-1,1))
-  geometric_ln[i] = exp(mean(log(rlnorm(100,-1,1))))
+  sample <- rlnorm(100,-1,1)
+  arithmetic_ln[i] = mean(sample)
+  geometric_ln[i] = exp(mean(log(sample)))
   }
 
 plot_mean <- data.frame(arithmetic_ln, geometric_ln)
@@ -372,8 +374,9 @@ arithmetic_u <- rep(NA, 1000)
 geometric_u <- rep(NA, 1000)
 
 for(i in 1:1000){
-  arithmetic_u[i] = mean(runif(100,0,12))
-  geometric_u[i] = exp(mean(log(runif(100,0,12))))
+  sample <- runif(100,0,12)
+  arithmetic_u[i] = mean(sample)
+  geometric_u[i] = exp(mean(log(sample)))
   }
 
 plot_mean <- data.frame(arithmetic_u, geometric_u)
@@ -415,7 +418,7 @@ ggplot(df_mean_diff_u, aes(mean_diff_u)) + geom_histogram(binwidth=0.25, fill="l
 
 # Part 3
 
-When we looked at the scatter plot of the arithmetic mean and geometric mean, it was clear that every point on the plot fell on one side or the other of line of identity. Therefore, that means that the arithmetic mean or geometric mean is always smaller or larger than the other. Therefore, we can conclude that E[log (X)] is never equal to log (E[X]). From the scatter plots I generated for gamma, log normal, and uniform, it was also clear that the majority of the points fell below the line of identity, meaning the arithmetic mean was almost always bigger than the geometric mean, but never equal. There were also instances where geometric was bigger than arithmetic.
+When we looked at the scatter plot of the arithmetic mean and geometric mean, it was clear that every point on the plot fell below the line of identity. This tells us two things. First, it means means that the arithmetic mean or geometric mean are never equal to eachother, because no points fall on the line. Second, it means that the arithmetic mean is always bigger than the geometric mean, since the points fall below y=x. Therefore, we can conclude that log (E[X]) is greater than and never equal to E[log (X)].
 
 
 
