@@ -418,11 +418,13 @@ ggplot(df_mean_diff_u, aes(mean_diff_u)) + geom_histogram(binwidth=0.25, fill="l
 
 # Part 3
 
-When we looked at the scatter plot of the arithmetic mean and geometric mean, it was clear that every point on the plot fell below the line of identity. This tells us two things. First, it means means that the arithmetic mean or geometric mean are never equal to eachother, because no points fall on the line. Second, it means that the arithmetic mean is always bigger than the geometric mean, since the points fall below y=x. Therefore, we can conclude that log (E[X]) is greater than and never equal to E[log (X)].
-
-
-
-
+When we looked at the scatter plot of the arithmetic mean and geometric mean, it was clear that every point on the plot fell below the line of identity. This tells us that the arithmetic mean is always bigger than the geometric mean, since the points fall below y=x. We also know that arithmetic mean is equal to E(X), and geometric mean is equal to exp(E(log(X))). So, we have the following: 
+$$E[X] > e^{E[log(X)]}$$ 
+If we then take the log of both expressions, we have:
+$$log(E[X]) > log(e^{E[log(X)]})$$ 
+Cancelling out the log(exp) in the second expression, we have the following:
+$$log(E[X]) > E[log(X)]$$
+Therefore, knowing that the arithmetic mean is greater than the geometric mean, and using the formulas for both mean calculations, we can conclude that log(E[X]) is greater than E[log(X)].
 
 
 
