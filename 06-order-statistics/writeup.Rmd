@@ -33,7 +33,7 @@ formula discussed in class. Generate a plot of the function.
 Answer: The density function for $X_{(k)}$ is as follows: $f_{(k)}(x) = k\, {n \choose k}[F(x)]^{k-1}[1-F(x)]^{n-k}f(x)$. 
 Using this, we can plug in *n* = 200 and *k* = 100 to get the density function for the median.
 
-```{r}
+```{r include=FALSE}
 library(dplyr)
 ```
 
@@ -46,11 +46,14 @@ dorder <- function(x){
   dnorm(x)
 }
 
-curve(dorder(x),-0.6,0.6, 
+curve(dorder(x),-0.6,0.6,
       xlab="Median", 
       ylab="Density", 
       main="Distribution of Median with sample size 200")
 ```
+
+From this graph, we can see that the median of a sample of *N* = 200 from the standard normal distribution falls right around 0, and sharply tails off right around -0.3 and 0.3. This means that for each normal distribution with sample size 200, the median value will be a number extremely close to 0.
+
 
 ## Question 2
 Write an R function that is the probability function for the median in this sample. Use the order statistic formula discussed in class. Generate a plot of the function.
@@ -68,6 +71,8 @@ curve(porder(x), -0.3, 0.3,
       ylab="Probability", 
       main="CDF of Median with sample size 200")
 ```
+Using the order statistic formula, we generate a very symmetric CDF, which has an inflection point right around 0. This aligns with the PDF we generated in question 1, and it means the most likely value for a median of the standard normal distribution is 0. The CDF barely increases outside the range of (-0.3, 0.3), because there are almost no median values that fall outside that range.
+
 
 ## Question 3
 Write an R function that is the quantile function for the median in this sample. (You have several options for how to write this function.) Generate a plot of the function.
@@ -89,6 +94,8 @@ curve(qorder(x), 0,1, ylim=c(-0.2,0.2),
       ylab="Median", 
       main="Quantile Function of Median with sample size 200")
 ```
+The quantile function generated above was done so using the uniroot function. This graph is a direct inverse of the CDF, which aligns with the CDF we generated in question 2. This quantile function takes in a cumulative probability and outputs a median value such that the left hand probability of the median equaling that outputted value is equal to the inputted cumulative probability. In this example, since the PDF is symmetrical around 0, we know that at the median value of 0, the total probability of median values less than or equal to 0 is 0.5. If you look at the x value of 0.5 here, you can see that it equals to the median value of 0, which is exactly what we expect.
+
 
 ## Question 4
 Simulate the sampling distribution for the median. Create a plot
@@ -109,6 +116,8 @@ curve(porder(x), add=TRUE, col = "red", lw=2)
 legend(0.15,0.25,legend=c("Analytical", "Simulation"),
        col=c("red", "blue"), lty=1:1)
 ```
+In this code, I calculate the median of the normal distribution for a sample size 200, and store that value in an empty list. I then replicate that process 1,000 times to create a vector containing the 1,000 medians of the normal distribution for a sample size 200. After I have the simulated data, I run it through the ecdf function and plot the result. As you can see, the simulated ecdf sits almost perfectly on top of the analytical CDF, meaning the CDF of the sampling distribution for the median holds up analytically and through simulation. 
+
 
 ## Question 5
 Using the simulated sampling distribution from the previous question, create a histogram (on the density scale). Overlay the histogram with a plot of the density function.
@@ -121,8 +130,12 @@ medians <- replicate(
 )
 
 hist(medians, freq=FALSE)
-lines(density(medians), col="red", lw=2)
+curve(dorder(x), add=TRUE, col = "red", lw=2)
+legend("topright",legend=c("Analytical"),
+       col=c("red"), lty=1:1)
 ```
+Using the same simulation method as above, I created a histogram of the medians of 1,000 samples of the normal distribution for a sample size 200. As you can see, the histogram lines up perfectly with the analytical PDF we calculated in question 1. Again, the PDF of the sampling distribution for the median holds up analytically and through simulation.
+
 
 ## Question 6
 
@@ -148,9 +161,9 @@ abline(0,1)
 As we can see from the graph, the plotted points all fall very close to the line *y* = *x*. This means that simulated data very much agrees with the theoretical sampling distribution.
 
 ## Question 7
-Modify the dorder, porder, and qorder functions so that the functions take a new parameter k (for the kt**h order statistic) so that the functions will work for any order statistic and not just the median.
+Modify the `dorder`, `porder`, and `qorder` functions so that the functions take a new parameter k (for the kt**h order statistic) so that the functions will work for any order statistic and not just the median.
 
-Answer:
+Answer: In the following code, I add a `k` parameter to each of the dorder, porder, and qorder functions. Now, instead of the functions having to find the median where k=100, you can now input k and calculate some other order statistic. 
 ```{r}
 dorder <- function(x, k){
   k*
@@ -203,7 +216,8 @@ functions take new parameters `dist` and `...` so that the functions
 will work for any continuous distribution that has `d` and `p` functions
 defined in R.
 
-Answer:
+Answer: In the followin code, I now also add the `dist` parameter, which now allows you to input whatever distribution you want, and you will get the correct dorder, porder, and qorder functions. You can also input any distribution paramters you need to, and they will be correctly inputted to each function.
+
 ```{r}
 dorder <- function(x, k, dist, ...){
   p <- eval(parse(text=paste0("p", dist)))
@@ -247,3 +261,4 @@ curve(porder(x,1,"norm"), -5,0,
       main="CDF of Minimum with sample size 200")
 ```
 
+The above graphs represent the PDF and CDF for the sampling distribution for the median of the normal distribution with sample size 200. As you can see form the PDF, the minimum value is centered around -2.75. The minimum value tails off more sharply to the right, and more gradually to the left. This is because there is no bound on the minimum value, so out of 200 samples, the minimum has a wider range of possible values to the left than to the right. This aligns with the PDF as well, as you can see the cumulative probability gradually starts to increase right around -3.5, then it sharply rises through -2.75, and then it suddenly decreases to very close to 1, as the probability of having a minimum greater than -2 is extremely unlikely.
