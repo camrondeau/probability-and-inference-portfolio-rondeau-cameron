@@ -1,0 +1,720 @@
+---
+title: "Modeling the unknown distribution with maximum likelihood and method of moments"
+author: "Cam Rondeau"
+date: "11/3/2021"
+output:
+  html_document:
+    code_folding: hide
+    toc: yes
+    number_sections: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+
+# Introduction
+
+Maximum likelihood (MLE) and method of moments (MM) are two common methods for constructing a model. In this blog post, I will write a tutorial in which I will explain how one might use MLE and MM to model Glycohemoglobin and height of adult females. The data will be from National Health and Nutrition Examination Survey 2009-2010 (NHANES). To do this, I will compare and contrast the two methods in addition to comparing and contrasting the choice of underlying distribution. 
+
+My tutorial will do the following things:  
+1.  Show how I calculated estimates of parameters  
+2.  Provide visuals that show the estimated distribution compared to the empirical distribution  
+    -   Overlay estimated pdf onto histogram  
+    -   Overlay estimated CDF onto eCDF  
+    -   QQ plot (sample vs estimated dist)  
+3.  Explain how I calculated the median from the estimated distribution  
+
+
+
+```{r include=FALSE}
+require(dplyr)
+require(stats4)
+Hmisc::getHdata(nhgh)
+d1 <- nhgh %>% 
+  filter(sex == "female") %>% 
+  filter(age >= 18) %>% 
+  select(gh, ht) %>% 
+  filter(1:n()<=1000)
+```
+    
+
+# Normal Distribution
+
+First, I will show how to model Glycohemoglobin and height of adult females using both maximum likelihood (MLE) and method of moments (MM) with the normal distribution.
+
+## Maximum Likelihood
+
+### Estimate Parameters
+
+We can first use MLE to model the Glycohemoglobin and height of adult females. To do this, we will estimate the parameters of the distribution such that the likelihood of such parameters producing the observed data is maximized. We can use the `mle` function to calculate such parameters, which I have done below for Glycohemoglobin and height.
+
+```{r}
+#Calculate parameters for Glycohemoglobin
+nLL_gh <- function(mean, sd){
+  fs <- dnorm(
+        x = d1$gh
+      , mean = mean
+      , sd = sd
+      , log = TRUE
+    ) 
+  -sum(fs)
+}
+fit_gh <- mle(
+    nLL_gh
+  , start = list(mean = 1, sd = 1)
+  , method = "L-BFGS-B"
+  , lower = c(0, 0.01)
+)
+
+mean_gh <- coef(fit_gh)[1]
+sd_gh <- coef(fit_gh)[2]
+
+
+#Calculate parameters for height
+nLL_ht <- function(mean, sd){
+  fs <- dnorm(
+        x = d1$ht
+      , mean = mean
+      , sd = sd
+      , log = TRUE
+    ) 
+  -sum(fs)
+}
+fit_ht <- mle(
+    nLL_ht
+  , start = list(mean = 1, sd = 1)
+  , method = "L-BFGS-B"
+  , lower = c(0, 0.01)
+)
+
+mean_ht <- coef(fit_ht)[1]
+sd_ht <- coef(fit_ht)[2]
+```
+
+
+### Visualizations
+
+Next, I will show what our estimated normal distribution with the calculated parameters looks like graphically, and I will compare that to the empirical distribution. I will do this for the PDF, CDF, and also create a QQ plot.
+
+#### PDF & CDF (With Estimated Median)
+
+First, I will create a histogram from the data of both Glycohemoglobin and height, and then I will overlay the estimated pdf using the `dnorm` function and our estimated parameters for each set of data. Then, I will plot the eCDF of the data, and will overlay that with the estimated cdf using the `pnorm` function and our estimated parameters. 
+
+In addition to both plots, I will also calculate the median from the estimated distribution, and will overlay it on the plots. To do this, I will use the `qnorm` function and our estimated parameters. I will do this for both Glycohemoglobin and height. 
+
+
+```{r}
+#Calculate estimated median for Glycohemoglobin
+gh_median <- qnorm(0.5, mean_gh, sd_gh)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF Glycohemoglobin
+hist(d1$gh, freq = FALSE,main="Glycohemoglobin PDF", xlab="Glycohemoglobin", breaks=50)
+curve(dnorm(x, mean_gh, sd_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+#plot ecdf/CDF Glycohemoglobin
+plot(ecdf(d1$gh),main="Glycohemoglobin CDF", xlab="Glycohemoglobin")
+curve(pnorm(x, mean_gh, sd_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+
+#Calculate estimated median for height
+ht_median <- qnorm(0.5, mean_ht, sd_ht)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF height
+hist(d1$ht, freq = FALSE,main="Height PDF", xlab="Height", breaks=50)
+curve(dnorm(x, mean_ht, sd_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+
+#plot ecdf/CDF  height
+plot(ecdf(d1$ht),main="Height CDF", xlab="Height")
+curve(pnorm(x, mean_ht, sd_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+```  
+
+Using the normal distribution and MLE, the median of Glycohemoglobin is 5.72, and the median of height is 160.7.
+
+The estimated model using MLE and a normal distribution does not create a PDF that lines up very well with the Glycohemoglobin levels of adult females. As you can see, the histogram is not symmetrical, and tails off to the right for a while, so a normal distribution is probably not the correct underlying distribution here. The estimated model using MLE and a normal distribution for height is much more accurate, and the estimated PDF lines up very well with the histogram of the data. Similar to the histograms and PDFs, you can see in the above graphs that the estimated CDF of Glycohemoglobin does not line up with the eCDF of the data well at all, whereas the estimated CDF of height lines up very well with the ecdf of the height data.
+
+
+#### QQ Plot
+
+Finally, I will create a QQ plot to compare the empirical distribution and the estimated distribution. I will also do this for both Glycohemoglobin and height. 
+
+```{r}
+#plot QQ plot Glycohemoglobin
+x <- qnorm((1:1000)/1000, mean_gh, sd_gh)
+y <- quantile(rnorm(1000, mean_gh, sd_gh), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
+abline(0,1)
+
+
+#plot QQ plot height
+x <- qnorm((1:1000)/1000, mean_ht, sd_ht)
+y <- quantile(rnorm(1000, mean_ht, sd_ht), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Height")
+abline(0,1)
+```
+
+As you can see above, the points on the Glycohemoglobin QQ plot generally fall on the y=x line, but towards both ends the points start to stray a decent amount, indicating that the normal distribution may not be the best fit, which we also saw in the CDF and PDF above. 
+
+The QQ plot for height is much more uniform, and more points fall closer to the y=x line, indicating the normal distribution is a good fit, which also backs up the CDF and PDF plots above.
+
+
+
+## Method of Moments
+
+### Estimate Parameters
+
+Second, I will use method of moments to show how to estimate parameters of the normal distribution. I know that for the normal distribution, mean = μ, and variance = $σ^2$. Therefore, we already know that the μ parameter is equal to the mean of the data. We can then calculate σ by taking the square root of the variance. We can do this for both Glycohemoglobin and height separately, which I have done in the code below.
+
+```{r}
+mean_gh <- mean(d1$gh)
+var_gh <- var(d1$gh)
+sd_gh <- sqrt(var_gh)
+
+mean_ht <- mean(d1$ht)
+var_ht <- var(d1$ht)
+sd_ht <- sqrt(var_ht)
+```
+
+
+### Visualizations
+
+Next, I will show what our estimated normal distribution with the calculated parameters looks like graphically, and I will compare that to the empirical distribution. I will do this for the PDF, CDF, and also create a QQ plot.
+
+#### PDF & CDF (With Estimated Median)
+
+First, I will create a histogram from the data of both Glycohemoglobin and height, and then I will overlay the estimated pdf using the `dnorm` function and our estimated parameters for each set of data. Then, I will plot the eCDF of the data, and will overlay that with the estimated cdf using the `pnorm` function and our estimated parameters. 
+
+In addition to both plots, I will also calculate the median from the estimated distribution, and will overlay it on the plots. To do this, I will use the `qnorm` function and our estimated parameters. I will do this for both Glycohemoglobin and height. 
+
+```{r}
+#Calculate estimated median for Glycohemoglobin
+gh_median <- qnorm(0.5, mean_gh, sd_gh)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF Glycohemoglobin
+hist(d1$gh, freq = FALSE,main="Glycohemoglobin PDF", xlab="Glycohemoglobin", breaks=50)
+curve(dnorm(x, mean_gh, sd_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+#plot ecdf/CDF Glycohemoglobin
+plot(ecdf(d1$gh),main="Glycohemoglobin CDF", xlab="Glycohemoglobin")
+curve(pnorm(x, mean_gh, sd_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+
+#Calculate estimated median for height
+ht_median <- qnorm(0.5, mean_ht, sd_ht)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF height
+hist(d1$ht, freq = FALSE,main="Height PDF", xlab="Height", breaks=50)
+curve(dnorm(x, mean_ht, sd_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+
+#plot ecdf/CDF  height
+plot(ecdf(d1$ht),main="Height CDF", xlab="Height")
+curve(pnorm(x, mean_ht, sd_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+```
+
+Using the normal distribution and MM, the median of Glycohemoglobin is 5.72, and the median of height is 160.7, which are the same exact values from using MLE.
+
+The estimated model using MM and a normal distribution creates almost identical plots as the MLE method. Again, the Glycohemoglobin plots don't line up as well as the height ones do, meaning that the normal distribution is probably not the right underlying distribution for Glycohemoglobin, but it definitely could be for height.
+
+
+#### QQ Plot
+
+Finally, I will create a QQ plot to compare the empirical distribution and the estimated distribution. I will also do this for both Glycohemoglobin and height. 
+
+```{r}
+#plot QQ plot Glycohemoglobin
+x <- qnorm((1:1000)/1000, mean_gh, sd_gh)
+y <- quantile(rnorm(1000, mean_gh, sd_gh), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
+abline(0,1)
+
+
+#plot QQ plot height
+x <- qnorm((1:1000)/1000, mean_ht, sd_ht)
+y <- quantile(rnorm(1000, mean_ht, sd_ht), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Height")
+abline(0,1)
+```
+
+The QQ plots are also identical to the MLE method, showing that Glycohemoglobin does not line up very well, but height does more so.
+
+## Conclusion
+
+When using the normal curve as the underlying distribution, there was no difference between using the MLE or MM. In both cases, the estimated Glycohemoglobin plots did not line up with the data very well at all, but the estimated height plots did.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Gamma Distribution
+
+Now, I will show how to model Glycohemoglobin and height of adult females using both maximum likelihood (MLE) and method of moments (MM) with the gamma distribution. I follow the same steps as I did above for the normal distribution, only this time I replace all `norm` functions with `gamma`. 
+
+## Maximum Likelihood
+
+### Estimate Parameters
+
+I will again use the `mle` function to calculate the maximized likelihood parameters shape and scale for both Glycohemoglobin and height.
+
+```{r}
+#Calculate parameters for Glycohemoglobin
+nLL_gh <- function(shape, scale){
+  fs <- dgamma(
+        x = d1$gh
+      , shape = shape
+      , scale = scale
+      , log = TRUE
+    ) 
+  -sum(fs)
+}
+fit_gh <- mle(
+    nLL_gh
+  , start = list(shape = 1, scale = 1)
+  , method = "L-BFGS-B"
+  , lower = c(0, 0.01)
+)
+
+shape_gh <- coef(fit_gh)[1]
+scale_gh <- coef(fit_gh)[2]
+
+
+#Calculate parameters for height
+nLL_ht <- function(shape, scale){
+  fs <- dgamma(
+        x = d1$ht
+      , shape = shape
+      , scale = scale
+      , log = TRUE
+    ) 
+  -sum(fs)
+}
+fit_ht <- mle(
+    nLL_ht
+  , start = list(shape = 1, scale = 1)
+  , method = "L-BFGS-B"
+  , lower = c(0, 0.01)
+)
+
+shape_ht <- coef(fit_ht)[1]
+scale_ht <- coef(fit_ht)[2]
+```
+
+
+### Visualizations
+
+Next, I will show what our estimated gamma distribution with the calculated parameters looks like graphically, and I will compare that to the empirical distribution. I will do this for the PDF, CDF, and also create a QQ plot.
+
+#### PDF & CDF (With Estimated Median)
+
+```{r}
+#Calculate estimated median for Glycohemoglobin
+gh_median <- qgamma(0.5, shape=shape_gh, scale=scale_gh)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF Glycohemoglobin
+hist(d1$gh, freq = FALSE,main="Glycohemoglobin PDF", xlab="Glycohemoglobin", breaks=50)
+curve(dgamma(x, shape=shape_gh, scale=scale_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+#plot ecdf/CDF Glycohemoglobin
+plot(ecdf(d1$gh),main="Glycohemoglobin CDF", xlab="Glycohemoglobin")
+curve(pgamma(x, shape=shape_gh, scale=scale_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+
+#Calculate estimated median for height
+ht_median <- qgamma(0.5, shape=shape_ht, scale=scale_ht)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF height
+hist(d1$ht, freq = FALSE,main="Height PDF", xlab="Height", breaks=50)
+curve(dgamma(x, shape=shape_ht, scale=scale_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+
+#plot ecdf/CDF  height
+plot(ecdf(d1$ht),main="Height CDF", xlab="Height")
+curve(pgamma(x, shape=shape_ht, scale=scale_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+```  
+
+Using the gamma distribution and MLE, the median of Glycohemoglobin is 5.68, and the median of height is 160.6.
+
+Similar to the normal distribution, the estimated model using MLE and a gamma distribution does not create a PDF or CDF estimate that line up very well with the empirical Glycohemoglobin data. Most of the Glycohemoglobin levels fall between 5 and 6, and the estimated gamma distribuion does not weigh this range of outputs heavily enough. 
+
+Similar to the normal distribution, the estimated model using MLE and a normal distribution for height is much more accurate, and the estimated PDF lines up well with the histogram of the data, as well as the CDF with the eCDF.
+
+
+#### QQ Plot
+
+Finally, I will create a QQ plot to compare the empirical distribution and the estimated distribution. I will also do this for both Glycohemoglobin and height. 
+
+```{r}
+#plot QQ plot Glycohemoglobin
+x <- qgamma((1:1000)/1000, shape=shape_gh, scale=scale_gh)
+y <- quantile(rgamma(1000, shape=shape_gh, scale=scale_gh), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
+abline(0,1)
+
+
+#plot QQ plot height
+x <- qgamma((1:1000)/1000, shape=shape_ht, scale=scale_ht)
+y <- quantile(rgamma(1000, shape=shape_ht, scale=scale_ht), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Height")
+abline(0,1)
+```
+
+As you can see above, the points on the Glycohemoglobin QQ plot almost entirely do not fall on the y=x line, indicating that the gamma distribution is definitely not a good fit, which we also saw in the CDF and PDF above. 
+
+The QQ plot for height is a little more uniform, and more points fall closer to the y=x line, however this fit is not as good as the normal distribution for height.
+
+
+
+## Method of Moments
+
+### Estimate Parameters
+
+Now, I will use method of moments to show how to estimate parameters of the gamma distribution. I know that for the gamma distribution, mean = shape * scale, and variance = shape * $scale^2$. Therefore, we can calculate that scale = variance / mean, and shape = mean$^2$ / variance. We can do this for both Glycohemoglobin and height separately, which I have done in the code below.
+
+```{r}
+mean_gh <- mean(d1$gh)
+var_gh <- var(d1$gh)
+shape_gh <- mean_gh^2/var_gh
+scale_gh <- var_gh/mean_gh
+
+mean_ht <- mean(d1$ht)
+var_ht <- var(d1$ht)
+shape_ht <- mean_ht^2/var_ht
+scale_ht <- var_ht/mean_ht
+```
+
+
+### Visualizations
+
+Next, I will show what our estimated normal distribution with the calculated parameters looks like graphically, and I will compare that to the empirical distribution. I will do this for the PDF, CDF, and also create a QQ plot.
+
+#### PDF & CDF (With Estimated Median)
+
+```{r}
+#Calculate estimated median for Glycohemoglobin
+gh_median <- qgamma(0.5, shape=shape_gh, scale=scale_gh)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF Glycohemoglobin
+hist(d1$gh, freq = FALSE,main="Glycohemoglobin PDF", xlab="Glycohemoglobin", breaks=50)
+curve(dgamma(x, shape=shape_gh, scale=scale_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+#plot ecdf/CDF Glycohemoglobin
+plot(ecdf(d1$gh),main="Glycohemoglobin CDF", xlab="Glycohemoglobin")
+curve(pgamma(x, shape=shape_gh, scale=scale_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+
+#Calculate estimated median for height
+ht_median <- qgamma(0.5, shape=shape_ht, scale=scale_ht)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF height
+hist(d1$ht, freq = FALSE,main="Height PDF", xlab="Height", breaks=50)
+curve(dgamma(x, shape=shape_ht, scale=scale_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+
+#plot ecdf/CDF  height
+plot(ecdf(d1$ht),main="Height CDF", xlab="Height")
+curve(pgamma(x, shape=shape_ht, scale=scale_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+```
+
+Using the gamma distribution and MM, the median of Glycohemoglobin is 5.66, and the median of height is 160.6, which are the same exact values from using MLE.
+
+Again, the estimated model using MM and a gamma distribution creates very similar plots as the MLE method. Again, the Glycohemoglobin plots don't line up as well as the height ones do, meaning that the gamma distribution is probably not the right underlying distribution for Glycohemoglobin or for height.
+
+
+#### QQ Plot
+
+Finally, I will create a QQ plot to compare the empirical distribution and the estimated distribution. I will also do this for both Glycohemoglobin and height. 
+
+```{r}
+#plot QQ plot Glycohemoglobin
+x <- qgamma((1:1000)/1000, shape=shape_gh, scale=scale_gh)
+y <- quantile(rgamma(1000, shape=shape_gh, scale=scale_gh), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
+abline(0,1)
+
+
+#plot QQ plot height
+x <- qgamma((1:1000)/1000, shape=shape_ht, scale=scale_ht)
+y <- quantile(rgamma(1000, shape=shape_ht, scale=scale_ht), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Height")
+abline(0,1)
+```
+
+The QQ plots are also identical to the MLE method, showing that Glycohemoglobin does not line up very well, but height does more so.
+
+## Conclusion
+
+When using the gamma curve as the underlying distribution, there was practically no difference between using the MLE or MM. In both cases, the estimated Glycohemoglobin plots and height plots did not line up with with actual data very well.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Weibull Distribution
+
+Now, I will show how to model Glycohemoglobin and height of adult females using both maximum likelihood (MLE) and method of moments (MM) with the weibull distribution. I follow the same steps as I did above for the normal and gamma distributions, only this time I will use all `weibull` functions.
+
+## Maximum Likelihood
+
+### Estimate Parameters
+
+I will again use the `mle` function to calculate the maximized likelihood parameters shape and scale for both Glycohemoglobin and height.
+
+```{r}
+#Calculate parameters for Glycohemoglobin
+nLL_gh <- function(shape, scale){
+  fs <- dweibull(
+        x = d1$gh
+      , shape = shape
+      , scale = scale
+      , log = TRUE
+    ) 
+  -sum(fs)
+}
+fit_gh <- mle(
+    nLL_gh
+  , start = list(shape = 1, scale = 1)
+  , method = "L-BFGS-B"
+  , lower = c(0, 0.01)
+)
+
+shape_gh <- coef(fit_gh)[1]
+scale_gh <- coef(fit_gh)[2]
+
+
+#Calculate parameters for height
+nLL_ht <- function(shape, scale){
+  fs <- dweibull(
+        x = d1$ht
+      , shape = shape
+      , scale = scale
+      , log = TRUE
+    ) 
+  -sum(fs)
+}
+fit_ht <- mle(
+    nLL_ht
+  , start = list(shape = 1, scale = 1)
+  , method = "L-BFGS-B"
+  , lower = c(0, 0.01)
+)
+
+shape_ht <- coef(fit_ht)[1]
+scale_ht <- coef(fit_ht)[2]
+```
+
+
+### Visualizations
+
+Next, I will show what our estimated weibull distribution with the calculated parameters looks like graphically, and I will compare that to the empirical distribution. I will do this for the PDF, CDF, and also create a QQ plot.
+
+#### PDF & CDF (With Estimated Median)
+
+```{r}
+#Calculate estimated median for Glycohemoglobin
+gh_median <- qweibull(0.5, shape=shape_gh, scale=scale_gh)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF Glycohemoglobin
+hist(d1$gh, freq = FALSE,main="Glycohemoglobin PDF", xlab="Glycohemoglobin", breaks=50)
+curve(dweibull(x, shape=shape_gh, scale=scale_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+#plot ecdf/CDF Glycohemoglobin
+plot(ecdf(d1$gh),main="Glycohemoglobin CDF", xlab="Glycohemoglobin")
+curve(pweibull(x, shape=shape_gh, scale=scale_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+
+#Calculate estimated median for height
+ht_median <- qweibull(0.5, shape=shape_ht, scale=scale_ht)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF height
+hist(d1$ht, freq = FALSE,main="Height PDF", xlab="Height", breaks=50)
+curve(dweibull(x, shape=shape_ht, scale=scale_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+
+#plot ecdf/CDF  height
+plot(ecdf(d1$ht),main="Height CDF", xlab="Height")
+curve(pweibull(x, shape=shape_ht, scale=scale_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+```  
+
+Using the weibull distribution and MLE, the median of Glycohemoglobin is 5.64, and the median of height is 161.5.
+
+Similar to the normal and gamma distribution, the estimated model using MLE and a gamma distribution does not create a PDF or CDF estimate that line up very well with the empirical Glycohemoglobin data. The plots for the height are also not very accurate, meaning the weibull distribution is not a good underlying fit for this data.
+
+
+#### QQ Plot
+
+Finally, I will create a QQ plot to compare the empirical distribution and the estimated distribution. I will also do this for both Glycohemoglobin and height. 
+
+```{r}
+#plot QQ plot Glycohemoglobin
+x <- qweibull((1:1000)/1000, shape=shape_gh, scale=scale_gh)
+y <- quantile(rweibull(1000, shape=shape_gh, scale=scale_gh), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
+abline(0,1)
+
+
+#plot QQ plot height
+x <- qweibull((1:1000)/1000, shape=shape_ht, scale=scale_ht)
+y <- quantile(rweibull(1000, shape=shape_ht, scale=scale_ht), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Height")
+abline(0,1)
+```
+
+As you can see above, the points on the Glycohemoglobin QQ plot generally fall on the y=x line, but towards both ends the points start to stray a decent amount, indicating that the weibull distribution may not be the best fit, which we also saw in the CDF and PDF above. The points on the height line don't line up well at all.
+
+
+
+## Method of Moments
+
+### Estimate Parameters
+
+Now, I will use method of moments to show how to estimate parameters of the weibull distribution. I know that for the gamma distribution, mean = shape * scale, and variance = shape * $scale^2$. Therefore, we can calculate that scale = variance / mean, and shape = mean$^2$ / variance. We can do this for both Glycohemoglobin and height separately, which I have done in the code below.
+
+
+### Visualizations
+
+Next, I will show what our estimated normal distribution with the calculated parameters looks like graphically, and I will compare that to the empirical distribution. I will do this for the PDF, CDF, and also create a QQ plot.
+
+#### PDF & CDF (With Estimated Median)
+
+```{r}
+#Calculate estimated median for Glycohemoglobin
+gh_median <- qweibull(0.5, shape=shape_gh, scale=scale_gh)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF Glycohemoglobin
+hist(d1$gh, freq = FALSE,main="Glycohemoglobin PDF", xlab="Glycohemoglobin", breaks=50)
+curve(dweibull(x, shape=shape_gh, scale=scale_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+#plot ecdf/CDF Glycohemoglobin
+plot(ecdf(d1$gh),main="Glycohemoglobin CDF", xlab="Glycohemoglobin")
+curve(pweibull(x, shape=shape_gh, scale=scale_gh), add=TRUE, lwd=3, col="red")
+abline(v=gh_median, lwd=2, col="blue")
+
+
+#Calculate estimated median for height
+ht_median <- qweibull(0.5, shape=shape_ht, scale=scale_ht)
+
+par(mfrow=c(1,2))
+#plot histogram/PDF height
+hist(d1$ht, freq = FALSE,main="Height PDF", xlab="Height", breaks=50)
+curve(dweibull(x, shape=shape_ht, scale=scale_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+
+#plot ecdf/CDF  height
+plot(ecdf(d1$ht),main="Height CDF", xlab="Height")
+curve(pweibull(x, shape=shape_ht, scale=scale_ht), add=TRUE, lwd=3, col="red")
+abline(v=ht_median, lwd=2, col="blue")
+```
+
+Using the weibull distribution and MM, the median of Glycohemoglobin is 5.65, and the median of height is 161.5.
+
+Again, the estimated model using MM and a gamma distribution creates very similar plots as the MLE method. Again, the Glycohemoglobin plots don't line up as well as the height ones do, meaning that the gamma distribution is probably not the right underlying distribution for Glycohemoglobin or for height.
+
+
+#### QQ Plot
+
+Finally, I will create a QQ plot to compare the empirical distribution and the estimated distribution. I will also do this for both Glycohemoglobin and height. 
+
+```{r}
+#plot QQ plot Glycohemoglobin
+x <- qweibull((1:1000)/1000, shape=shape_gh, scale=scale_gh)
+y <- quantile(rweibull(1000, shape=shape_gh, scale=scale_gh), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
+abline(0,1)
+
+
+#plot QQ plot height
+x <- qweibull((1:1000)/1000, shape=shape_ht, scale=scale_ht)
+y <- quantile(rweibull(1000, shape=shape_ht, scale=scale_ht), probs = (1:1000)/1000)
+plot(x,y, asp=1, main="QQ Plot for Height")
+abline(0,1)
+```
+
+The QQ plots are also identical to the MLE method, showing that Glycohemoglobin and height both don't line up very well.
+
+## Conclusion
+
+When using the weibull curve as the underlying distribution, MLE and MM were very similar again. In both cases, the estimated Glycohemoglobin plots and height plots did not line up with with actual data very well.
+
+
+
+
+# Final Conclusion
+I just walked through how to use maximum likelihood and method of moments to model the Glycohemoglobin and height of adult females using three separate underlying distributions. The one thing that stood out to me the most was that for each individual distribution, the resulting plots for MLE and MM were strikingly similar. That means that whether you use MLE or MM, you will estimate very similar distributions to model your data. 
+
+Another conclusion I found was that there really wasn't a good underlying distribution to model the Glycohemoglobin data. For normal, gamma, and weibull, the estimated CDF and PDFs were never very accurate and didn't represent the actual data in a great way. If we had to pick from the three, weibull probably had the most accurate results. 
+
+In terms of height, the normal distribution generated very accurate results, and it is definitely the right underlying distribution to model this data.
+
+
+
+
+
+
+
+
+
+
+
+
+
