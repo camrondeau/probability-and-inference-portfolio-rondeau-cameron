@@ -1,0 +1,199 @@
+---
+title: "Coverage Probability"
+author: "Cam Rondeau"
+date: "11/29/2021"
+output:
+  html_document:
+    code_folding: hide
+    toc: yes
+    number_sections: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+# Introduction
+
+Coverage probability is an important operating characteristic of methods
+for constructing interval estimates, particularly confidence intervals.
+
+**Definition:** For the purposes of this blog post, define the 95%
+confidence interval of the median to be the middle 95% of sampling
+distribution of the median. Similarly, the 95% confidence interval of
+the mean, standard deviation, etc. is the middle 95% of the respective
+sampling distribution.
+
+**Definition:** For the purposes of this blog post, define the
+coverage probability as the long run proportion of intervals that
+capture the population parameter of interest. Conceptualy, one can
+calculate the coverage probability with the following steps:
+
+1.  Generate a sample of size *N* from a known distribution  
+2.  Construct a confidence interval  
+3.  Determine if the confidence captures the population parameter  
+4.  Repeat steps (1) - (3) many times. Estimate the coverage probability
+    as the proportion of samples for which the confidence interval
+    captured the population parameter.
+
+The figure below shows the 95% confidence interval calculated for a
+handful of samples. Intervals in blue capture the population parameter
+of interest; intervals in red do not.
+
+![](coverage-prob.svg)  
+
+Idealy, a 95% confidence interval will capture the population parameter
+of interest in 95% of samples.
+
+
+
+# Deliverable
+
+In this blog post, I will perform a simulation to calculate the
+coverage probability of the 95% confidence interval of the median when
+computed from *F̂*<sub>*X*</sub><sup>*m**l**e*</sup>. 
+
+## Step 1
+
+First, I will generate a single sample from a normal distribution of size *N* = 201.
+
+```{r include=FALSE}
+library(dplyr)
+library(stats4)
+```
+
+```{r}
+data <- rnorm(201)
+```
+
+Then, I will use the maximum likelihood method to estimate the distribution of the random sample. As I went over in my last blog, the MLE calculates estimated parameters for this distribution such that the likelihood of such parameters producing the observed data is maximized.
+
+
+```{r}
+nLL <- function(mean, sd){
+  fs <- dnorm(
+        x = data
+      , mean = mean
+      , sd = sd
+      , log = TRUE
+    ) 
+  -sum(fs)
+}
+fit <- mle(
+    nLL
+  , start = list(mean = 0, sd = 1)
+  , method = "L-BFGS-B"
+  , lower = c(0, 0.01)
+)
+
+mean_sim <- coef(fit)[1]
+sd_sim <- coef(fit)[2]
+
+mean_sim
+sd_sim
+```
+
+As you can see, the mean is extremely close to 0, and the standard deviation is extremely close to 1, just as we would expect give the standard normal distribution.
+
+## Step 2
+
+Next, I will approximate the sampling distribution of the median using the estimated distribution from step 1. To do this, I will use simulation.
+
+```{r}
+sample_median = rep(NA,500)
+
+for(i in seq_along(sample_median)){
+  sample_median[i] <- median(rnorm(201,mean=mean_sim, sd=sd_sim))
+}
+
+hist(sample_median, breaks=20)
+```
+
+
+## Step 3
+
+Now, I will calculate a 95% confidence interval from the approximated sampling distribution. Since we are looking at the sampling distribution of the median, we know it is truly a normal distribution, so the 95% confidence interval can be found by chopping off 2.5% on either end of the curve.
+
+```{r}
+ci <- quantile(sample_median, c(0.025, 0.975))
+ci
+```
+
+
+## Step 4
+
+Next, I will explain the concept of coverage probability. As I defined at the beginning of this blog post, coverage probability is the long run proportion of intervals that capture the population parameter of interest. When you calculate a confidence interval, you are calculating an interval that likely contains some population parameter. Coverage probability is the calculation of how many confidence interval contain the population parameter when put through a simulation.
+
+The code above went through a single calculation of a confidence interval for the given distribution. To calculate coverage probability, I now need to put the above code into a simulation, and calculate how many confidence intervals contain the population parameter.
+
+
+## Step 5
+
+Now, I will actually run the simulation and calculate the coverage probability. When calculating the estimated mean and standard deviation parameters for each sample, we can simply take the mean and sd of the sample instead of using the full MLE method above. We can do this because we are dealing with the normal distribution.
+
+Also, because we are dealing with the normal distribution , we know the median is 0, so we just have to make sure each confidence interval contains 0.
+
+
+```{r}
+generate_data <- function(N){ 
+  #generate sample of size N
+  rnorm(N) 
+}
+
+boot_ci <- function(data){
+  #construct confidence interval
+  R <- 5000
+  sampdist <- rep(NA, R)
+  mean_data = mean(data)
+  sd_data = sd(data)
+  for(i in 1:R){
+    b <- rnorm(201,mean=mean_data,sd=sd_data)
+    sampdist[i] <- median(b)
+  }
+  quantile(sampdist, c(0.025, 0.975))
+}
+
+capture_median <- function(ci){
+  #calculate if 0 is inside the confidence interval
+  1*(ci[1] < 0 & 0 < ci[2])
+}
+
+#run simulation
+M <- 5000
+captures <- rep(NA, M)
+for(i in 1:M){
+  captures[i] <- 
+    201 %>% generate_data %>% boot_ci %>% capture_median
+}
+
+#calculate proportion of confidence intervals that contain 0.
+capture_prob <- mean(captures)
+capture_prob
+```
+
+
+After running the above simulation for 5,000 trials, we get a coverage probability of 0.9872. Ideally, 95% of confidence intervals will contain the population parameter of interest in 95% of samples, so this is a great outcome.
+
+
+## Step 6
+
+If we wanted to change the simulation to learn more about different operating characteristics, we can easily do that. For example, we could look at a different summary measure such as variance, mean, min, or max, simply by changing the summary calculation in the `boot_ci` function. We can also alter our confidence interval from 95% to something else to determine how that effects the coverage probability. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
