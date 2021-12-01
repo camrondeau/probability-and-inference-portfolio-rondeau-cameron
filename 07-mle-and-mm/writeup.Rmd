@@ -72,6 +72,9 @@ fit_gh <- mle(
 mean_gh <- coef(fit_gh)[1]
 sd_gh <- coef(fit_gh)[2]
 
+sprintf("Glycohemoglobin mean using MLE: %f", mean_gh)
+sprintf("Glycohemoglobin standard deviation using MLE: %f", sd_gh)
+
 
 #Calculate parameters for height
 nLL_ht <- function(mean, sd){
@@ -92,6 +95,9 @@ fit_ht <- mle(
 
 mean_ht <- coef(fit_ht)[1]
 sd_ht <- coef(fit_ht)[2]
+  
+sprintf("Height mean using MLE: %f", mean_ht)
+sprintf("Height standard deviation using MLE: %f", sd_ht)
 ```
 
 
@@ -146,24 +152,25 @@ The estimated model using MLE and a normal distribution does not create a PDF th
 
 Finally, I will create a QQ plot to compare the empirical distribution and the estimated distribution. I will also do this for both Glycohemoglobin and height. 
 
+
 ```{r}
 #plot QQ plot Glycohemoglobin
 x <- qnorm((1:1000)/1000, mean_gh, sd_gh)
-y <- quantile(rnorm(1000, mean_gh, sd_gh), probs = (1:1000)/1000)
+y <- quantile(d1$gh, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
 abline(0,1)
 
 
 #plot QQ plot height
 x <- qnorm((1:1000)/1000, mean_ht, sd_ht)
-y <- quantile(rnorm(1000, mean_ht, sd_ht), probs = (1:1000)/1000)
+y <- quantile(d1$ht, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Height")
 abline(0,1)
 ```
 
-As you can see above, the points on the Glycohemoglobin QQ plot generally fall on the y=x line, but towards both ends the points start to stray a decent amount, indicating that the normal distribution may not be the best fit, which we also saw in the CDF and PDF above. 
+As you can see above, the points on the Glycohemoglobin QQ plot do not fall on the y=x line very well at all, indicating that the normal distribution may not be the best fit, which we also saw in the CDF and PDF above. 
 
-The QQ plot for height is much more uniform, and more points fall closer to the y=x line, indicating the normal distribution is a good fit, which also backs up the CDF and PDF plots above.
+The QQ plot for height is much more uniform, and more points fall much closer to the y=x line, indicating the normal distribution is a good fit, which also backs up the CDF and PDF plots above.
 
 
 
@@ -178,9 +185,16 @@ mean_gh <- mean(d1$gh)
 var_gh <- var(d1$gh)
 sd_gh <- sqrt(var_gh)
 
+sprintf("Glycohemoglobin mean using MM: %f", mean_gh)
+sprintf("Glycohemoglobin standard deviation using MM: %f", sd_gh)
+
+
 mean_ht <- mean(d1$ht)
 var_ht <- var(d1$ht)
 sd_ht <- sqrt(var_ht)
+
+sprintf("Height mean using MM: %f", mean_ht)
+sprintf("Height standard deviation using MM: %f", sd_ht)
 ```
 
 
@@ -237,19 +251,19 @@ Finally, I will create a QQ plot to compare the empirical distribution and the e
 ```{r}
 #plot QQ plot Glycohemoglobin
 x <- qnorm((1:1000)/1000, mean_gh, sd_gh)
-y <- quantile(rnorm(1000, mean_gh, sd_gh), probs = (1:1000)/1000)
+y <- quantile(d1$gh, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
 abline(0,1)
 
 
 #plot QQ plot height
 x <- qnorm((1:1000)/1000, mean_ht, sd_ht)
-y <- quantile(rnorm(1000, mean_ht, sd_ht), probs = (1:1000)/1000)
+y <- quantile(d1$ht, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Height")
 abline(0,1)
 ```
 
-The QQ plots are also identical to the MLE method, showing that Glycohemoglobin does not line up very well, but height does more so.
+The QQ plots are also identical to the MLE method, showing that Glycohemoglobin does not line up very well at all, but height does.
 
 ## Conclusion
 
@@ -309,6 +323,9 @@ fit_gh <- mle(
 shape_gh <- coef(fit_gh)[1]
 scale_gh <- coef(fit_gh)[2]
 
+sprintf("Glycohemoglobin shape using MLE: %f", shape_gh)
+sprintf("Glycohemoglobin scale using MLE: %f", scale_gh)
+  
 
 #Calculate parameters for height
 nLL_ht <- function(shape, scale){
@@ -329,6 +346,9 @@ fit_ht <- mle(
 
 shape_ht <- coef(fit_ht)[1]
 scale_ht <- coef(fit_ht)[2]
+
+sprintf("Height shape using MLE: %f", shape_ht)
+sprintf("Height scale using MLE: %f", scale_ht)
 ```
 
 
@@ -383,14 +403,14 @@ Finally, I will create a QQ plot to compare the empirical distribution and the e
 ```{r}
 #plot QQ plot Glycohemoglobin
 x <- qgamma((1:1000)/1000, shape=shape_gh, scale=scale_gh)
-y <- quantile(rgamma(1000, shape=shape_gh, scale=scale_gh), probs = (1:1000)/1000)
+y <- quantile(d1$gh, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
 abline(0,1)
 
 
 #plot QQ plot height
 x <- qgamma((1:1000)/1000, shape=shape_ht, scale=scale_ht)
-y <- quantile(rgamma(1000, shape=shape_ht, scale=scale_ht), probs = (1:1000)/1000)
+y <- quantile(d1$ht, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Height")
 abline(0,1)
 ```
@@ -413,10 +433,17 @@ var_gh <- var(d1$gh)
 shape_gh <- mean_gh^2/var_gh
 scale_gh <- var_gh/mean_gh
 
+sprintf("Glycohemoglobin shape using MM: %f", shape_gh)
+sprintf("Glycohemoglobin scale using MM: %f", scale_gh)
+  
+
 mean_ht <- mean(d1$ht)
 var_ht <- var(d1$ht)
 shape_ht <- mean_ht^2/var_ht
 scale_ht <- var_ht/mean_ht
+
+sprintf("Height shape using MM: %f", shape_ht)
+sprintf("Height scale using MM: %f", scale_ht)
 ```
 
 
@@ -469,14 +496,14 @@ Finally, I will create a QQ plot to compare the empirical distribution and the e
 ```{r}
 #plot QQ plot Glycohemoglobin
 x <- qgamma((1:1000)/1000, shape=shape_gh, scale=scale_gh)
-y <- quantile(rgamma(1000, shape=shape_gh, scale=scale_gh), probs = (1:1000)/1000)
+y <- quantile(d1$gh, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
 abline(0,1)
 
 
 #plot QQ plot height
 x <- qgamma((1:1000)/1000, shape=shape_ht, scale=scale_ht)
-y <- quantile(rgamma(1000, shape=shape_ht, scale=scale_ht), probs = (1:1000)/1000)
+y <- quantile(d1$ht, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Height")
 abline(0,1)
 ```
@@ -534,6 +561,9 @@ fit_gh <- mle(
 shape_gh <- coef(fit_gh)[1]
 scale_gh <- coef(fit_gh)[2]
 
+sprintf("Glycohemoglobin shape using MLE: %f", shape_gh)
+sprintf("Glycohemoglobin scale using MLE: %f", scale_gh)
+
 
 #Calculate parameters for height
 nLL_ht <- function(shape, scale){
@@ -554,6 +584,9 @@ fit_ht <- mle(
 
 shape_ht <- coef(fit_ht)[1]
 scale_ht <- coef(fit_ht)[2]
+  
+sprintf("Height shape using MLE: %f", shape_ht)
+sprintf("Height scale using MLE: %f", scale_ht)
 ```
 
 
@@ -606,19 +639,19 @@ Finally, I will create a QQ plot to compare the empirical distribution and the e
 ```{r}
 #plot QQ plot Glycohemoglobin
 x <- qweibull((1:1000)/1000, shape=shape_gh, scale=scale_gh)
-y <- quantile(rweibull(1000, shape=shape_gh, scale=scale_gh), probs = (1:1000)/1000)
+y <- quantile(d1$gh, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
 abline(0,1)
 
 
 #plot QQ plot height
 x <- qweibull((1:1000)/1000, shape=shape_ht, scale=scale_ht)
-y <- quantile(rweibull(1000, shape=shape_ht, scale=scale_ht), probs = (1:1000)/1000)
+y <- quantile(d1$ht, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Height")
 abline(0,1)
 ```
 
-As you can see above, the points on the Glycohemoglobin QQ plot generally fall on the y=x line, but towards both ends the points start to stray a decent amount, indicating that the weibull distribution may not be the best fit, which we also saw in the CDF and PDF above. The points on the height line don't line up well at all.
+As you can see above, the points on the Glycohemoglobin QQ plot and the height QQ plot both don't line up well with the y=x line at all, indicating that neither variable can be estimated accurately with the Weibull distribution.
 
 
 
@@ -626,7 +659,48 @@ As you can see above, the points on the Glycohemoglobin QQ plot generally fall o
 
 ### Estimate Parameters
 
-Now, I will use method of moments to show how to estimate parameters of the weibull distribution. I know that for the gamma distribution, mean = shape * scale, and variance = shape * $scale^2$. Therefore, we can calculate that scale = variance / mean, and shape = mean$^2$ / variance. We can do this for both Glycohemoglobin and height separately, which I have done in the code below.
+Now, I will use method of moments to show how to estimate parameters of the weibull distribution. I know that for the gamma distribution, mean = b Γ(1 + 1/a), and variance = b^2 * (Γ(1 + 2/a) - (Γ(1 + 1/a))^2), where shape = *a* and scale = *b*. Therefore, we can calculate scale and shape as per the below code. We can do this for both Glycohemoglobin and height separately.
+
+```{r}
+mean_gh <- mean(d1$gh)
+sd_gh <- sd(d1$gh)
+
+
+#solve for scale from mean equation
+#scale_gh <- mean_gh/(gamma(1 + (1/shape)))
+
+#plug scale equation into variance equation
+#var_calc/mean_gh^2 = ((gamma(1 + (2/shape)))/(gamma(1 + (1/shape)))^2)-1
+  
+#Use estimate of above equations to find shape, then plug in for scale
+shape_gh <- (sd_gh/mean_gh)^-1.086
+
+#solve for scale from mean equation
+scale_gh <- mean_gh/(gamma(1 + (1/shape_gh)))
+
+
+sprintf("Glycohemoglobin shape using MM: %f", shape_gh)
+sprintf("Glycohemoglobin scale using MM: %f", scale_gh)
+  
+
+mean_ht <- mean(d1$ht)
+sd_ht <- sd(d1$ht)
+
+#solve for scale from mean equation
+#scale_gh <- mean_gh/(gamma(1 + (1/shape)))
+
+#plug scale equation into variance equation
+#var_calc/mean_gh^2 = ((gamma(1 + (2/shape)))/(gamma(1 + (1/shape)))^2)-1
+  
+#Use estimate of above equations to find shape, then plug in for scale
+shape_ht <- (sd_ht/mean_ht)^-1.086
+
+#solve for scale from mean equation
+scale_ht <- mean_ht/(gamma(1 + (1/shape_ht)))
+
+sprintf("Height shape using MM: %f", shape_ht)
+sprintf("Height scale using MM: %f", scale_ht)
+```
 
 
 ### Visualizations
@@ -678,14 +752,14 @@ Finally, I will create a QQ plot to compare the empirical distribution and the e
 ```{r}
 #plot QQ plot Glycohemoglobin
 x <- qweibull((1:1000)/1000, shape=shape_gh, scale=scale_gh)
-y <- quantile(rweibull(1000, shape=shape_gh, scale=scale_gh), probs = (1:1000)/1000)
+y <- quantile(d1$gh, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Glycohemoglobin")
 abline(0,1)
 
 
 #plot QQ plot height
 x <- qweibull((1:1000)/1000, shape=shape_ht, scale=scale_ht)
-y <- quantile(rweibull(1000, shape=shape_ht, scale=scale_ht), probs = (1:1000)/1000)
+y <- quantile(d1$ht, probs = (1:1000)/1000)
 plot(x,y, asp=1, main="QQ Plot for Height")
 abline(0,1)
 ```
