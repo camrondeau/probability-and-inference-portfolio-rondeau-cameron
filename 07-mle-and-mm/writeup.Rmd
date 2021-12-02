@@ -702,6 +702,9 @@ sprintf("Height shape using MM: %f", shape_ht)
 sprintf("Height scale using MM: %f", scale_ht)
 ```
 
+The calculations for scale and shape of the Weibull distribution were taken from the paper "Methods for Estimating Wind Speed Frequency Distributions" by C.G. Justus, W.R. Hargraves, Amir Mikhail, and Denise Graber. (https://journals.ametsoc.org/view/journals/apme/17/3/1520-0450_1978_017_0350_mfewsf_2_0_co_2.xml)
+
+
 
 ### Visualizations
 
