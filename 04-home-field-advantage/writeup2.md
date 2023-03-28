@@ -207,7 +207,7 @@ replicates_nhfa <- replicate(100000,one_series(0.55,1))
 mean(replicates_nhfa)
 ```
 
-    ## [1] 0.61036
+    ## [1] 0.60694
 
 ``` r
 #Simulate probabily of Braves winning when home field does matter
@@ -215,7 +215,7 @@ replicates_hfa <- replicate(100000,one_series(0.55,1.1))
 mean(replicates_hfa)
 ```
 
-    ## [1] 0.60471
+    ## [1] 0.60447
 
 As you can see, the simulated probability of the Braves winning without
 home field advantage is still slightly higher than winning with home
@@ -252,13 +252,13 @@ rel_error_nhfa = abs(p_sim_nhfa - p_analytic_nhfa)/p_analytic_nhfa
 abs_error_nhfa
 ```
 
-    ## [1] 0.001262203
+    ## [1] 0.002387797
 
 ``` r
 rel_error_nhfa
 ```
 
-    ## [1] 0.00207501
+    ## [1] 0.003925439
 
 ## With Home Field Advantage
 
@@ -276,15 +276,15 @@ rel_error_hfa = abs(p_sim_hfa - p_analytic_hfa)/p_analytic_hfa
 abs_error_hfa
 ```
 
-    ##             V1
-    ## 1: 0.001919028
+    ##              V1
+    ## 1: 0.0003690284
 
 ``` r
 rel_error_hfa
 ```
 
-    ##             V1
-    ## 1: 0.003176037
+    ##              V1
+    ## 1: 0.0006107507
 
 # Does the difference in probabilities (with vs without home field advantage) depend on *P*<sub>*B*</sub>?
 
