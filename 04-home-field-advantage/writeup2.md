@@ -207,7 +207,7 @@ replicates_nhfa <- replicate(100000,one_series(0.55,1))
 mean(replicates_nhfa)
 ```
 
-    ## [1] 0.6084
+    ## [1] 0.60602
 
 ``` r
 #Simulate probabily of Braves winning when home field does matter
@@ -215,7 +215,7 @@ replicates_hfa <- replicate(100000,one_series(0.55,1.1))
 mean(replicates_hfa)
 ```
 
-    ## [1] 0.6064
+    ## [1] 0.60654
 
 As you can see, the simulated probability of the Braves winning without
 home field advantage is still slightly higher than winning with home
@@ -252,13 +252,13 @@ rel_error_nhfa = abs(p_sim_nhfa - p_analytic_nhfa)/p_analytic_nhfa
 abs_error_nhfa
 ```
 
-    ## [1] 0.0008677969
+    ## [1] 0.0009077969
 
 ``` r
 rel_error_nhfa
 ```
 
-    ## [1] 0.001426622
+    ## [1] 0.001492381
 
 ## With Home Field Advantage
 
@@ -277,14 +277,14 @@ abs_error_hfa
 ```
 
     ##              V1
-    ## 1: 0.0001809716
+    ## 1: 9.716137e-07
 
 ``` r
 rel_error_hfa
 ```
 
     ##              V1
-    ## 1: 0.0002995123
+    ## 1: 1.608044e-06
 
 # Does the difference in probabilities (with vs without home field advantage) depend on *P*<sub>*B*</sub>?
 
@@ -360,7 +360,7 @@ ggplot(Pb_graph, aes(x=Pb_list, y=Pws)) + geom_point() +
   theme_classic()
 ```
 
-![](writeup2_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](writeup2_files/figure-gfm/show_figure-1.png)<!-- -->
 
 As you can see, the differences in probabilities of winning the World
 Series with and without home field advantage varies as the probability
@@ -415,7 +415,7 @@ ggplot(hfa_graph, aes(x=hfa_list, y=hfa)) + geom_point() +
   theme_classic()
 ```
 
-![](writeup2_files/figure-gfm/unnamed-chunk-10-1.png)<!-- --> As you can
+![](writeup2_files/figure-gfm/unnamed-chunk-9-1.png)<!-- --> As you can
 see, as the advantage factor increases, the difference in probabilities
 between home field advantage and non home field advantage decreases at a
 rapid rate. This makes sense, because as the home field advantage gets
