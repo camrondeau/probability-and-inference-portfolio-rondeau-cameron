@@ -207,7 +207,7 @@ replicates_nhfa <- replicate(100000,one_series(0.55,1))
 mean(replicates_nhfa)
 ```
 
-    ## [1] 0.61006
+    ## [1] 0.6084
 
 ``` r
 #Simulate probabily of Braves winning when home field does matter
@@ -215,7 +215,7 @@ replicates_hfa <- replicate(100000,one_series(0.55,1.1))
 mean(replicates_hfa)
 ```
 
-    ## [1] 0.60291
+    ## [1] 0.6064
 
 As you can see, the simulated probability of the Braves winning without
 home field advantage is still slightly higher than winning with home
@@ -252,13 +252,13 @@ rel_error_nhfa = abs(p_sim_nhfa - p_analytic_nhfa)/p_analytic_nhfa
 abs_error_nhfa
 ```
 
-    ## [1] 0.0003222031
+    ## [1] 0.0008677969
 
 ``` r
 rel_error_nhfa
 ```
 
-    ## [1] 0.0005296886
+    ## [1] 0.001426622
 
 ## With Home Field Advantage
 
@@ -277,14 +277,14 @@ abs_error_hfa
 ```
 
     ##              V1
-    ## 1: 0.0004390284
+    ## 1: 0.0001809716
 
 ``` r
 rel_error_hfa
 ```
 
     ##              V1
-    ## 1: 0.0007266024
+    ## 1: 0.0002995123
 
 # Does the difference in probabilities (with vs without home field advantage) depend on *P*<sub>*B*</sub>?
 
@@ -350,7 +350,7 @@ effects things.
 library(ggplot2)
 ```
 
-    ## Warning: package 'ggplot2' was built under R version 4.1.2
+    ## Warning: package 'ggplot2' was built under R version 4.1.3
 
 ``` r
 ggplot(Pb_graph, aes(x=Pb_list, y=Pws)) + geom_point() +
